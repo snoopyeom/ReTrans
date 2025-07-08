@@ -190,7 +190,10 @@ def _collect_recon(autoencoder, dataset, n_samples):
     autoencoder.eval()
     with torch.no_grad():
         for z, x in loader:
-            r, _ = autoencoder(z)
+            out = autoencoder(z)
+            # ``ZBankAutoencoder`` returns only the reconstruction while
+            # ``BasicWindowAutoencoder`` returns ``(recon, latents)``.
+            r = out[0] if isinstance(out, (tuple, list)) else out
             orig.append(x.squeeze(0))
             recon.append(r.squeeze(0))
             if len(orig) >= n_samples:
