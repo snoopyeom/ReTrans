@@ -304,8 +304,15 @@ class Solver(object):
         gt = np.array(gt)
 
         precision, recall, f_score, _ = precision_recall_fscore_support(
-            gt, pred, average='binary')
-        auc = roc_auc_score(gt, attens_energy)
+            gt, pred, average='binary', zero_division=0)
+
+        if len(np.unique(gt)) < 2:
+            warnings.warn(
+                "Only one class present in y_true. ROC AUC is undefined.")
+            auc = float("nan")
+        else:
+            auc = roc_auc_score(gt, attens_energy)
+
         return f_score, auc
 
     def train(self):
