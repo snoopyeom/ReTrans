@@ -13,7 +13,11 @@ except ModuleNotFoundError as exc:  # pragma: no cover - graceful message
     ) from exc
 
 from main import main as run_main
-from utils.analysis_tools import plot_replay_vs_series
+from utils.analysis_tools import (
+    plot_replay_vs_series,
+    plot_zbank_recon_pca,
+    plot_zbank_recon_umap,
+)
 
 
 def train_and_test(args: argparse.Namespace) -> None:
@@ -48,7 +52,7 @@ def train_and_test(args: argparse.Namespace) -> None:
                 solver.model,
                 series,
                 start=start_idx,
-                end=min(len(series), start_idx + 4000),
+                end=min(len(series), start_idx + args.replay_len),
                 save_path=out_path,
                 ordered=True,
                 use_indices=True,
@@ -57,6 +61,15 @@ def train_and_test(args: argparse.Namespace) -> None:
                 print(f"Replay comparison saved to {out_path}")
             else:
                 print(f"Replay plot failed to save at {out_path}")
+
+            base_dir = os.path.dirname(out_path)
+            pca_path = os.path.join(base_dir, "recon_pca.png")
+            plot_zbank_recon_pca(solver.model, save_path=pca_path)
+            try:
+                umap_path = os.path.join(base_dir, "recon_umap.png")
+                plot_zbank_recon_umap(solver.model, save_path=umap_path)
+            except Exception as exc:
+                print(f"Failed to generate UMAP plot: {exc}")
         except Exception as exc:
             print(f"Failed to generate replay plot: {exc}")
     args.mode = "test"
@@ -121,6 +134,8 @@ def main():
                         help='log metrics every N CPD updates')
     parser.add_argument('--replay_plot', type=str, default=None,
                         help='optional path to save replay vs actual figure')
+    parser.add_argument('--replay_len', type=int, default=4000,
+                        help='number of steps to visualize when using --replay_plot')
 
     def _parse_ranges(arg):
         if not arg:
