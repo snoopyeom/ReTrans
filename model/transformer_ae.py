@@ -235,8 +235,18 @@ class AnomalyTransformerAE(nn.Module):
             total += torch.mean(my_kl_loss(q.detach(), p))
         return total / len(prior)
 
-    def forward(self, x):
-        """Forward pass returning reconstruction and attention info."""
+    def forward(self, x, indices: torch.Tensor | None = None):
+        """Forward pass returning reconstruction and attention info.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input batch of shape ``(B, L, C)``.
+        indices : torch.Tensor or None, optional
+            Starting index of each window in the original series. When provided
+            this value is stored in ``z_bank`` as ``"idx"`` for precise
+            alignment.
+        """
         enc = self.embedding(x)
         enc, series, prior, _ = self.encoder(enc)
         z = self.fc_latent(enc)
@@ -251,13 +261,18 @@ class AnomalyTransformerAE(nn.Module):
 
         # advance time step and store (input, latent) pairs for later replay
         self.current_step += 1
-        for x_i, vec in zip(x, z):
-            self.z_bank.append({
+        for i, (x_i, vec) in enumerate(zip(x, z)):
+            entry = {
                 "x": x_i.detach().cpu(),
                 "z": vec.detach().cpu(),
                 "step": self.current_step,
                 "usage": 0,
-            })
+            }
+            if indices is not None:
+                idx_val = int(indices[i])
+                if idx_val >= 0:
+                    entry["idx"] = idx_val
+            self.z_bank.append(entry)
         self._purge_z_bank()
 
         self.maybe_freeze_encoder()
@@ -388,6 +403,8 @@ def train_model_with_replay(
     model: AnomalyTransformerAE,
     optimizer: torch.optim.Optimizer,
     current_data: torch.Tensor,
+    *,
+    indices: torch.Tensor | None = None,
     cpd_penalty: int = 20,
     min_gap: int = 30,
     replay_consistency_weight: float = 0.0,
@@ -396,6 +413,7 @@ def train_model_with_replay(
     """Train model with replay based on detected concept drift."""
     model.train()
     data = current_data
+    idx_all = indices
     weights = torch.ones(len(current_data), device=current_data.device)
     drift_detected = False
     if rpt is not None:
@@ -419,9 +437,12 @@ def train_model_with_replay(
                 replay_samples, replay_weights = replay
                 data = torch.cat([current_data, replay_samples], dim=0)
                 weights = torch.cat([weights, replay_weights.to(current_data.device)])
+                if idx_all is not None:
+                    pad = torch.full((len(replay_samples),), -1, dtype=idx_all.dtype, device=idx_all.device)
+                    idx_all = torch.cat([idx_all, pad], dim=0)
     else:
         warnings.warn("ruptures not installed; CPD updates will not run")
-    recon, _, _, _ = model(data)
+    recon, _, _, _ = model(data, indices=idx_all)
     loss = model.loss_function(recon, data, weights=weights)
     if replay_consistency_weight > 0 and model.z_bank:
         device = current_data.device

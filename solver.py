@@ -97,11 +97,16 @@ class Solver(object):
 
         self.update_count = 0
 
-        self.train_loader = get_loader_segment(self.data_path, batch_size=self.batch_size, win_size=self.win_size,
-                                               mode='train',
-                                               dataset=self.dataset,
-                                               train_start=self.train_start,
-                                               train_end=self.train_end)
+        self.train_loader = get_loader_segment(
+            self.data_path,
+            batch_size=self.batch_size,
+            win_size=self.win_size,
+            mode='train',
+            dataset=self.dataset,
+            train_start=self.train_start,
+            train_end=self.train_end,
+            return_index=True,
+        )
         self.vali_loader = get_loader_segment(self.data_path, batch_size=self.batch_size, win_size=self.win_size,
                                               mode='val',
                                               dataset=self.dataset,
@@ -194,7 +199,11 @@ class Solver(object):
 
         # energies on train set
         attens_energy = []
-        for i, (input_data, labels) in enumerate(self.train_loader):
+        for i, batch in enumerate(self.train_loader):
+            if len(batch) == 3:
+                input_data, labels, _ = batch
+            else:
+                input_data, labels = batch
             input = input_data.float().to(self.device)
             output, series, prior, _ = self.model(input)
             loss = torch.mean(criterion(input, output), dim=-1)
@@ -226,7 +235,11 @@ class Solver(object):
         # energies on threshold loader
         attens_energy = []
         test_labels = []
-        for i, (input_data, labels) in enumerate(self.thre_loader):
+        for i, batch in enumerate(self.thre_loader):
+            if len(batch) == 3:
+                input_data, labels, _ = batch
+            else:
+                input_data, labels = batch
             input = input_data.float().to(self.device)
             output, series, prior, _ = self.model(input)
             loss = torch.mean(criterion(input, output), dim=-1)
@@ -317,7 +330,12 @@ class Solver(object):
 
             epoch_time = time.time()
             self.model.train()
-            for i, (input_data, labels) in enumerate(self.train_loader):
+            for i, batch in enumerate(self.train_loader):
+                if len(batch) == 3:
+                    input_data, labels, indices = batch
+                else:
+                    input_data, labels = batch
+                    indices = None
 
                 iter_count += 1
                 input = input_data.float().to(self.device)
@@ -327,6 +345,7 @@ class Solver(object):
                         self.model,
                         self.optimizer,
                         input,
+                        indices=indices,
                         cpd_penalty=getattr(self, 'cpd_penalty', 20),
                         min_gap=getattr(self, 'min_cpd_gap', 30),
                     )
@@ -483,7 +502,11 @@ class Solver(object):
 
         # (1) stastic on the train set
         attens_energy = []
-        for i, (input_data, labels) in enumerate(self.train_loader):
+        for i, batch in enumerate(self.train_loader):
+            if len(batch) == 3:
+                input_data, labels, _ = batch
+            else:
+                input_data, labels = batch
             input = input_data.float().to(self.device)
             output, series, prior, _ = self.model(input)
             loss = torch.mean(criterion(input, output), dim=-1)
@@ -517,7 +540,11 @@ class Solver(object):
 
         # (2) find the threshold
         attens_energy = []
-        for i, (input_data, labels) in enumerate(self.thre_loader):
+        for i, batch in enumerate(self.thre_loader):
+            if len(batch) == 3:
+                input_data, labels, _ = batch
+            else:
+                input_data, labels = batch
             input = input_data.float().to(self.device)
             output, series, prior, _ = self.model(input)
 
@@ -557,7 +584,11 @@ class Solver(object):
         # (3) evaluation on the test set
         test_labels = []
         attens_energy = []
-        for i, (input_data, labels) in enumerate(self.thre_loader):
+        for i, batch in enumerate(self.thre_loader):
+            if len(batch) == 3:
+                input_data, labels, _ = batch
+            else:
+                input_data, labels = batch
             input = input_data.float().to(self.device)
             output, series, prior, _ = self.model(input)
 
