@@ -117,7 +117,7 @@ def _collect_latents(model, loader, n_samples):
 
     if not model.z_bank:
         raise ValueError("z_bank is empty; train the model before calling")
-    replay_latents = torch.stack([entry[1] for entry in model.z_bank]).cpu().numpy()
+    replay_latents = torch.stack([entry["z"] for entry in model.z_bank]).cpu().numpy()
     replay_latents = replay_latents[-n_samples:]
 
     return orig_latents, replay_latents

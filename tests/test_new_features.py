@@ -89,6 +89,22 @@ def test_z_bank_stores_x():
     assert torch.equal(model.z_bank[0]["x"], dummy[0])
 
 
+def test_z_bank_stores_idx():
+    model = AnomalyTransformerAE(
+        win_size=4,
+        enc_in=1,
+        d_model=4,
+        n_heads=1,
+        e_layers=1,
+        d_ff=4,
+        latent_dim=2,
+    )
+    dummy = torch.ones(2, 4, 1)
+    idxs = torch.tensor([5, 6])
+    model(dummy, indices=idxs)
+    assert model.z_bank[0]["idx"] == 5 and model.z_bank[1]["idx"] == 6
+
+
 def test_replay_consistency_loss():
     model = AnomalyTransformerAE(
         win_size=4,
@@ -107,6 +123,7 @@ def test_replay_consistency_loss():
         model,
         opt,
         dummy,
+        indices=torch.tensor([0]),
         replay_consistency_weight=1.0,
         cpd_penalty=0,
     )

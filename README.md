@@ -128,6 +128,9 @@ qualitatively inspecting continual learning behavior.
   performs the same comparison with **PCA**, and `plot_z_bank_umap` relies on
   **UMAP** if available. Each helper saves a scatter plot contrasting original
   and replayed vectors.
+- Each entry stored in ``z_bank`` now includes an ``"idx"`` field holding the
+  starting index of the window it came from. This allows replayed samples to be
+  aligned with the original time series for precise comparisons.
 - `visualize_cpd_detection(series, penalty=None, min_size=30, save_path="cpd_detection.png")`
   draws change points detected by `ruptures`. When `penalty` is ``None`` a
   heuristic based on series length is used, and `min_size` enforces a minimum

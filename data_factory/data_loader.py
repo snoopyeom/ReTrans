@@ -14,11 +14,12 @@ import pickle
 
 
 class PSMSegLoader(object):
-    def __init__(self, data_path, win_size, step, mode="train", train_start=0.0, train_end=1.0):
+    def __init__(self, data_path, win_size, step, mode="train", train_start=0.0, train_end=1.0, return_index: bool = False):
         self.mode = mode
         self.step = step
         self.win_size = win_size
         self.scaler = StandardScaler()
+        self.return_index = return_index
         data = pd.read_csv(data_path + '/train.csv')
         data = data.values[:, 1:]
 
@@ -57,26 +58,32 @@ class PSMSegLoader(object):
             return (self.test.shape[0] - self.win_size) // self.win_size + 1
 
     def __getitem__(self, index):
-        index = index * self.step
+        start = index * self.step
         if self.mode == "train":
-            return np.float32(self.train[index:index + self.win_size]), np.float32(self.test_labels[0:self.win_size])
-        elif (self.mode == 'val'):
-            return np.float32(self.val[index:index + self.win_size]), np.float32(self.test_labels[0:self.win_size])
-        elif (self.mode == 'test'):
-            return np.float32(self.test[index:index + self.win_size]), np.float32(
-                self.test_labels[index:index + self.win_size])
+            window = self.train[start:start + self.win_size]
+            label = self.test_labels[0:self.win_size]
+        elif self.mode == 'val':
+            window = self.val[start:start + self.win_size]
+            label = self.test_labels[0:self.win_size]
+        elif self.mode == 'test':
+            window = self.test[start:start + self.win_size]
+            label = self.test_labels[start:start + self.win_size]
         else:
-            return np.float32(self.test[
-                              index // self.step * self.win_size:index // self.step * self.win_size + self.win_size]), np.float32(
-                self.test_labels[index // self.step * self.win_size:index // self.step * self.win_size + self.win_size])
+            start = index // self.step * self.win_size
+            window = self.test[start:start + self.win_size]
+            label = self.test_labels[start:start + self.win_size]
+        if self.return_index:
+            return np.float32(window), np.float32(label), start
+        return np.float32(window), np.float32(label)
 
 
 class MSLSegLoader(object):
-    def __init__(self, data_path, win_size, step, mode="train", train_start=0.0, train_end=1.0):
+    def __init__(self, data_path, win_size, step, mode="train", train_start=0.0, train_end=1.0, return_index: bool = False):
         self.mode = mode
         self.step = step
         self.win_size = win_size
         self.scaler = StandardScaler()
+        self.return_index = return_index
         data = np.load(data_path + "/MSL_train.npy")
         self.scaler.fit(data)
         data = self.scaler.transform(data)
@@ -102,26 +109,32 @@ class MSLSegLoader(object):
             return (self.test.shape[0] - self.win_size) // self.win_size + 1
 
     def __getitem__(self, index):
-        index = index * self.step
+        start = index * self.step
         if self.mode == "train":
-            return np.float32(self.train[index:index + self.win_size]), np.float32(self.test_labels[0:self.win_size])
-        elif (self.mode == 'val'):
-            return np.float32(self.val[index:index + self.win_size]), np.float32(self.test_labels[0:self.win_size])
-        elif (self.mode == 'test'):
-            return np.float32(self.test[index:index + self.win_size]), np.float32(
-                self.test_labels[index:index + self.win_size])
+            window = self.train[start:start + self.win_size]
+            label = self.test_labels[0:self.win_size]
+        elif self.mode == 'val':
+            window = self.val[start:start + self.win_size]
+            label = self.test_labels[0:self.win_size]
+        elif self.mode == 'test':
+            window = self.test[start:start + self.win_size]
+            label = self.test_labels[start:start + self.win_size]
         else:
-            return np.float32(self.test[
-                              index // self.step * self.win_size:index // self.step * self.win_size + self.win_size]), np.float32(
-                self.test_labels[index // self.step * self.win_size:index // self.step * self.win_size + self.win_size])
+            start = index // self.step * self.win_size
+            window = self.test[start:start + self.win_size]
+            label = self.test_labels[start:start + self.win_size]
+        if self.return_index:
+            return np.float32(window), np.float32(label), start
+        return np.float32(window), np.float32(label)
 
 
 class SMAPSegLoader(object):
-    def __init__(self, data_path, win_size, step, mode="train", train_start=0.0, train_end=1.0):
+    def __init__(self, data_path, win_size, step, mode="train", train_start=0.0, train_end=1.0, return_index: bool = False):
         self.mode = mode
         self.step = step
         self.win_size = win_size
         self.scaler = StandardScaler()
+        self.return_index = return_index
         data = np.load(data_path + "/SMAP_train.npy")
         self.scaler.fit(data)
         data = self.scaler.transform(data)
@@ -147,26 +160,32 @@ class SMAPSegLoader(object):
             return (self.test.shape[0] - self.win_size) // self.win_size + 1
 
     def __getitem__(self, index):
-        index = index * self.step
+        start = index * self.step
         if self.mode == "train":
-            return np.float32(self.train[index:index + self.win_size]), np.float32(self.test_labels[0:self.win_size])
-        elif (self.mode == 'val'):
-            return np.float32(self.val[index:index + self.win_size]), np.float32(self.test_labels[0:self.win_size])
-        elif (self.mode == 'test'):
-            return np.float32(self.test[index:index + self.win_size]), np.float32(
-                self.test_labels[index:index + self.win_size])
+            window = self.train[start:start + self.win_size]
+            label = self.test_labels[0:self.win_size]
+        elif self.mode == 'val':
+            window = self.val[start:start + self.win_size]
+            label = self.test_labels[0:self.win_size]
+        elif self.mode == 'test':
+            window = self.test[start:start + self.win_size]
+            label = self.test_labels[start:start + self.win_size]
         else:
-            return np.float32(self.test[
-                              index // self.step * self.win_size:index // self.step * self.win_size + self.win_size]), np.float32(
-                self.test_labels[index // self.step * self.win_size:index // self.step * self.win_size + self.win_size])
+            start = index // self.step * self.win_size
+            window = self.test[start:start + self.win_size]
+            label = self.test_labels[start:start + self.win_size]
+        if self.return_index:
+            return np.float32(window), np.float32(label), start
+        return np.float32(window), np.float32(label)
 
 
 class SMDSegLoader(object):
-    def __init__(self, data_path, win_size, step, mode="train", train_start=0.0, train_end=1.0):
+    def __init__(self, data_path, win_size, step, mode="train", train_start=0.0, train_end=1.0, return_index: bool = False):
         self.mode = mode
         self.step = step
         self.win_size = win_size
         self.scaler = StandardScaler()
+        self.return_index = return_index
         data = np.load(data_path + "/SMD_train.npy")
         self.scaler.fit(data)
         data = self.scaler.transform(data)
@@ -191,29 +210,34 @@ class SMDSegLoader(object):
             return (self.test.shape[0] - self.win_size) // self.win_size + 1
 
     def __getitem__(self, index):
-        index = index * self.step
+        start = index * self.step
         if self.mode == "train":
-            return np.float32(self.train[index:index + self.win_size]), np.float32(self.test_labels[0:self.win_size])
-        elif (self.mode == 'val'):
-            return np.float32(self.val[index:index + self.win_size]), np.float32(self.test_labels[0:self.win_size])
-        elif (self.mode == 'test'):
-            return np.float32(self.test[index:index + self.win_size]), np.float32(
-                self.test_labels[index:index + self.win_size])
+            window = self.train[start:start + self.win_size]
+            label = self.test_labels[0:self.win_size]
+        elif self.mode == 'val':
+            window = self.val[start:start + self.win_size]
+            label = self.test_labels[0:self.win_size]
+        elif self.mode == 'test':
+            window = self.test[start:start + self.win_size]
+            label = self.test_labels[start:start + self.win_size]
         else:
-            return np.float32(self.test[
-                              index // self.step * self.win_size:index // self.step * self.win_size + self.win_size]), np.float32(
-                self.test_labels[index // self.step * self.win_size:index // self.step * self.win_size + self.win_size])
+            start = index // self.step * self.win_size
+            window = self.test[start:start + self.win_size]
+            label = self.test_labels[start:start + self.win_size]
+        if self.return_index:
+            return np.float32(window), np.float32(label), start
+        return np.float32(window), np.float32(label)
 
 
-def get_loader_segment(data_path, batch_size, win_size=100, step=100, mode='train', dataset='KDD', train_start=0.0, train_end=1.0):
+def get_loader_segment(data_path, batch_size, win_size=100, step=100, mode='train', dataset='KDD', train_start=0.0, train_end=1.0, return_index: bool = False):
     if (dataset == 'SMD'):
-        dataset = SMDSegLoader(data_path, win_size, step, mode, train_start, train_end)
+        dataset = SMDSegLoader(data_path, win_size, step, mode, train_start, train_end, return_index=return_index)
     elif (dataset == 'MSL'):
-        dataset = MSLSegLoader(data_path, win_size, 1, mode, train_start, train_end)
+        dataset = MSLSegLoader(data_path, win_size, 1, mode, train_start, train_end, return_index=return_index)
     elif (dataset == 'SMAP'):
-        dataset = SMAPSegLoader(data_path, win_size, 1, mode, train_start, train_end)
+        dataset = SMAPSegLoader(data_path, win_size, 1, mode, train_start, train_end, return_index=return_index)
     elif (dataset == 'PSM'):
-        dataset = PSMSegLoader(data_path, win_size, 1, mode, train_start, train_end)
+        dataset = PSMSegLoader(data_path, win_size, 1, mode, train_start, train_end, return_index=return_index)
 
     shuffle = False
     if mode == 'train':
