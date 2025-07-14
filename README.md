@@ -84,6 +84,8 @@ approach leverages the VAE branch to mitigate concept drift.
   updates (default `20`).
 - `--replay_plot`: optional path for saving a figure comparing replayed samples
   with the training data. When supplied, the visualization aligns windows using the stored `"idx"` values and focuses on the most recent CPD update. A success message with the absolute location is printed after saving.
+- When `--replay_plot` is used, the script also saves `recon_pca.png` and `recon_umap.png` in the same directory to illustrate reconstruction quality.
+- `--replay_len`: number of time steps included in the replay plot when `--replay_plot` is provided (default `4000`). Set this to a smaller value, such as `100`, to restrict the visualization to a short slice.
 - `--cpd_top_k`: number of zoomed views for CPD visualization (default `3`).
 - `--cpd_extra_ranges`: comma-separated `start:end` pairs for fixed CPD zoom
   windows (default `0:4000`).
@@ -162,8 +164,8 @@ qualitatively inspecting continual learning behavior.
 
 - `scripts/zbank_autoencoder_demo.py` illustrates how to train a lightweight
   autoencoder purely on the latent vectors stored in `z_bank`. After training it
-  generates `recon_tsne.png` and `recon_pca.png` visualizing how well the
-  reconstructions match the original windows. Run the demo with
+  generates `recon_tsne.png`, `recon_pca.png`, and `recon_umap.png` visualizing
+  how well the reconstructions match the original windows. Run the demo with
 
   ```bash
   python -m scripts.zbank_autoencoder_demo

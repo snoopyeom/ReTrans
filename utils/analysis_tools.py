@@ -221,6 +221,54 @@ def plot_reconstruction_pca(autoencoder, dataset, n_samples=500, save_path="reco
     _scatter_projection(orig, recon, reduced, "PCA of Reconstructions", save_path)
 
 
+def plot_reconstruction_umap(autoencoder, dataset, n_samples=500, save_path="recon_umap.png"):
+    """Visualize autoencoder reconstructions with UMAP."""
+    _ensure_deps({"umap-learn": umap})
+    orig, recon = _collect_recon(autoencoder, dataset, n_samples)
+    combined = np.concatenate([orig, recon], axis=0)
+    reducer = umap.UMAP(n_components=2, random_state=0)
+    reduced = reducer.fit_transform(combined)
+    _scatter_projection(orig, recon, reduced, "UMAP of Reconstructions", save_path)
+
+
+def _collect_zbank_recon(model, n_samples):
+    """Return original windows and decoder outputs from ``model.z_bank``."""
+    _ensure_deps()
+    if not getattr(model, "z_bank", []):
+        raise ValueError("z_bank is empty; train the model before calling")
+    entries = list(model.z_bank)[-n_samples:]
+    device = next(model.parameters()).device
+    orig = [e["x"].numpy() for e in entries]
+    latents = torch.stack([e["z"] for e in entries]).to(device)
+    with torch.no_grad():
+        if getattr(model.decoder, "requires_condition", False):
+            cond_len = model.decoder.cond_len
+            cond = torch.stack([e["x"] for e in entries]).to(device)[:, -cond_len:]
+            recon = model.decoder(latents, cond)
+        else:
+            recon = model.decoder(latents)
+    orig = np.array(orig).reshape(len(orig), -1)
+    recon = recon.cpu().numpy().reshape(len(orig), -1)
+    return orig, recon
+
+
+def plot_zbank_recon_pca(model, n_samples=500, save_path="recon_pca.png"):
+    """Visualize reconstruction quality of ``model`` using PCA."""
+    orig, recon = _collect_zbank_recon(model, n_samples)
+    combined = np.concatenate([orig, recon], axis=0)
+    reduced = PCA(n_components=2).fit_transform(combined)
+    _scatter_projection(orig, recon, reduced, "PCA of Reconstructions", save_path)
+
+
+def plot_zbank_recon_umap(model, n_samples=500, save_path="recon_umap.png"):
+    """Visualize reconstruction quality of ``model`` using UMAP."""
+    _ensure_deps({"umap-learn": umap})
+    orig, recon = _collect_zbank_recon(model, n_samples)
+    combined = np.concatenate([orig, recon], axis=0)
+    reducer = umap.UMAP(n_components=2, random_state=0)
+    reduced = reducer.fit_transform(combined)
+    _scatter_projection(orig, recon, reduced, "UMAP of Reconstructions", save_path)
+
 def visualize_cpd_detection(
     series,
     penalty=None,

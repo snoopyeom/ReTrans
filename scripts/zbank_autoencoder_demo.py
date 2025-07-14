@@ -32,6 +32,7 @@ from utils.zbank_autoencoder import ZBankAutoencoder, ZBankDataset, train_autoen
 from utils.analysis_tools import (
     plot_reconstruction_tsne,
     plot_reconstruction_pca,
+    plot_reconstruction_umap,
     plot_autoencoder_vs_series,
 )
 
@@ -116,6 +117,7 @@ def main() -> None:
 
     plot_reconstruction_tsne(ae, dataset, save_path=os.path.join(out_dir, "recon_tsne.png"))
     plot_reconstruction_pca(ae, dataset, save_path=os.path.join(out_dir, "recon_pca.png"))
+    plot_reconstruction_umap(ae, dataset, save_path=os.path.join(out_dir, "recon_umap.png"))
     series = ds.train[:, 0]
     plot_autoencoder_vs_series(
         ae,
