@@ -22,13 +22,25 @@ def test_plot_replay_vs_series(tmp_path):
     tensor_series = torch.tensor(series, dtype=torch.float32).unsqueeze(-1)
     windows = [tensor_series[i : i + model.win_size] for i in range(len(series) - model.win_size + 1)]
     data = torch.stack(windows)
+    indices = torch.arange(len(data))
     loader = torch.utils.data.DataLoader(
-        torch.utils.data.TensorDataset(data, torch.zeros(len(data))), batch_size=1
+        torch.utils.data.TensorDataset(data, torch.zeros(len(data)), indices), batch_size=1
     )
     with torch.no_grad():
-        for batch, _ in loader:
-            model(batch)
+        for batch in loader:
+            model(batch[0], indices=batch[2])
     out = tmp_path / "replay.png"
     plot_replay_vs_series(model, series, end=20, save_path=str(out), ordered=True)
     assert out.exists() and out.stat().st_size > 0
+
+    out2 = tmp_path / "replay_idx.png"
+    plot_replay_vs_series(
+        model,
+        series,
+        end=20,
+        save_path=str(out2),
+        ordered=True,
+        use_indices=True,
+    )
+    assert out2.exists() and out2.stat().st_size > 0
 
