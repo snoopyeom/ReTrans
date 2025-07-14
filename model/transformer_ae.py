@@ -259,23 +259,24 @@ class AnomalyTransformerAE(nn.Module):
         else:
             recon = self.decoder(z)
 
-        # advance time step and store (input, latent) pairs for later replay
-        self.current_step += 1
-        for i, (x_i, vec) in enumerate(zip(x, z)):
-            entry = {
-                "x": x_i.detach().cpu(),
-                "z": vec.detach().cpu(),
-                "step": self.current_step,
-                "usage": 0,
-            }
-            if indices is not None:
-                idx_val = int(indices[i])
-                if idx_val >= 0:
-                    entry["idx"] = idx_val
-            self.z_bank.append(entry)
-        self._purge_z_bank()
+        if self.training:
+            # advance time step and store (input, latent) pairs for later replay
+            self.current_step += 1
+            for i, (x_i, vec) in enumerate(zip(x, z)):
+                entry = {
+                    "x": x_i.detach().cpu(),
+                    "z": vec.detach().cpu(),
+                    "step": self.current_step,
+                    "usage": 0,
+                }
+                if indices is not None:
+                    idx_val = int(indices[i])
+                    if idx_val >= 0:
+                        entry["idx"] = idx_val
+                self.z_bank.append(entry)
+            self._purge_z_bank()
 
-        self.maybe_freeze_encoder()
+            self.maybe_freeze_encoder()
 
         return recon, series, prior, z
 
