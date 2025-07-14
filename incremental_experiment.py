@@ -41,13 +41,17 @@ def train_and_test(args: argparse.Namespace) -> None:
 
             series = series[:, 0]
             out_path = os.path.abspath(args.replay_plot)
+            start_idx = 0
+            if getattr(solver, "cpd_indices", None):
+                start_idx = solver.cpd_indices[-1]
             plot_replay_vs_series(
                 solver.model,
                 series,
-                start=0,
-                end=len(series),
+                start=start_idx,
+                end=min(len(series), start_idx + 4000),
                 save_path=out_path,
                 ordered=True,
+                use_indices=True,
             )
             if os.path.isfile(out_path):
                 print(f"Replay comparison saved to {out_path}")

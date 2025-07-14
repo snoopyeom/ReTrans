@@ -340,7 +340,14 @@ def visualize_cpd_detection(
 
 
 def plot_replay_vs_series(
-    model, series, *, start=0, end=4000, save_path="replay_vs_series.png", ordered=False
+    model,
+    series,
+    *,
+    start=0,
+    end=4000,
+    save_path="replay_vs_series.png",
+    ordered=False,
+    use_indices=False,
 ):
     """Compare replay-generated samples with the original series.
 
@@ -359,6 +366,10 @@ def plot_replay_vs_series(
     ordered : bool, optional
         When ``True`` use stored latents in chronological order instead of
         random sampling.
+    use_indices : bool, optional
+        Align replayed windows using the stored ``"idx"`` field. This allows
+        precise comparisons with the original series. Entries missing ``"idx"``
+        are ignored when this flag is enabled.
     """
     _ensure_deps()
     if not model.z_bank:
@@ -369,32 +380,60 @@ def plot_replay_vs_series(
     end = min(len(series), end)
 
     n_samples = end - start
-    if ordered:
-        replay = model.generate_replay_sequence(deterministic=True)
-        if replay is not None:
-            replay = replay[:n_samples]
+    if use_indices:
+        entries = [e for e in model.z_bank if "idx" in e]
+        if not entries:
+            raise ValueError("z_bank entries do not contain 'idx' information")
+        device = next(model.parameters()).device
+        max_len = n_samples
+        recon = np.zeros(max_len)
+        counts = np.zeros(max_len)
+        for entry in entries:
+            idx = int(entry["idx"])
+            if idx + model.win_size < start or idx >= end:
+                continue
+            z = entry["z"].unsqueeze(0).to(device)
+            with torch.no_grad():
+                if getattr(model.decoder, "requires_condition", False):
+                    cond = entry["x"].unsqueeze(0).to(device)[:, -model.decoder.cond_len :]
+                    dec = model.decoder(z, cond)
+                else:
+                    dec = model.decoder(z)
+            win = dec.squeeze(0).cpu().numpy()[:, 0]
+            offset = idx - start
+            idx_start = max(offset, 0)
+            idx_end = min(offset + model.win_size, n_samples)
+            win_start = 0 if offset >= 0 else -offset
+            win_end = win_start + (idx_end - idx_start)
+            recon[idx_start:idx_end] += win[win_start:win_end]
+            counts[idx_start:idx_end] += 1
     else:
-        replay = model.generate_replay_samples(n_samples)
-    if replay is None:
-        raise ValueError("Not enough entries in z_bank for replay")
-    replay = replay.detach().cpu().numpy()[:, :, 0]
+        if ordered:
+            replay = model.generate_replay_sequence(deterministic=True)
+            if replay is not None:
+                replay = replay[:n_samples]
+        else:
+            replay = model.generate_replay_samples(n_samples)
+        if replay is None:
+            raise ValueError("Not enough entries in z_bank for replay")
+        replay = replay.detach().cpu().numpy()[:, :, 0]
 
-    win_size = replay.shape[1]
-    available = replay.shape[0]
-    max_len = min(n_samples, available + win_size - 1)
-    recon = np.zeros(max_len)
-    counts = np.zeros(max_len)
-    for i in range(available):
-        idx_start = i
-        idx_end = i + win_size
-        if idx_start >= max_len:
-            break
-        win = replay[i]
-        if idx_end > max_len:
-            win = win[: max_len - idx_start]
-            idx_end = max_len
-        recon[idx_start:idx_end] += win
-        counts[idx_start:idx_end] += 1
+        win_size = replay.shape[1]
+        available = replay.shape[0]
+        max_len = min(n_samples, available + win_size - 1)
+        recon = np.zeros(max_len)
+        counts = np.zeros(max_len)
+        for i in range(available):
+            idx_start = i
+            idx_end = i + win_size
+            if idx_start >= max_len:
+                break
+            win = replay[i]
+            if idx_end > max_len:
+                win = win[: max_len - idx_start]
+                idx_end = max_len
+            recon[idx_start:idx_end] += win
+            counts[idx_start:idx_end] += 1
     counts[counts == 0] = 1
     recon /= counts
 
