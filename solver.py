@@ -303,15 +303,15 @@ class Solver(object):
         pred = np.array(pred)
         gt = np.array(gt)
 
-        precision, recall, f_score, _ = precision_recall_fscore_support(
-            gt, pred, average='binary', zero_division=0)
-
         if len(np.unique(gt)) < 2:
             warnings.warn(
-                "Only one class present in y_true. ROC AUC is undefined.")
-            auc = float("nan")
-        else:
-            auc = roc_auc_score(gt, attens_energy)
+                "Only one class present in y_true. F1 and ROC AUC are undefined"
+            )
+            return float("nan"), float("nan")
+
+        precision, recall, f_score, _ = precision_recall_fscore_support(
+            gt, pred, average='binary', zero_division=0)
+        auc = roc_auc_score(gt, attens_energy)
 
         return f_score, auc
 
