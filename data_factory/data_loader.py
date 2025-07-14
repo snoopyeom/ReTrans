@@ -69,7 +69,7 @@ class PSMSegLoader(object):
             window = self.test[start:start + self.win_size]
             label = self.test_labels[start:start + self.win_size]
         else:
-            start = index // self.step * self.win_size
+            start = index * self.win_size
             window = self.test[start:start + self.win_size]
             label = self.test_labels[start:start + self.win_size]
         if self.return_index:
@@ -120,7 +120,7 @@ class MSLSegLoader(object):
             window = self.test[start:start + self.win_size]
             label = self.test_labels[start:start + self.win_size]
         else:
-            start = index // self.step * self.win_size
+            start = index * self.win_size
             window = self.test[start:start + self.win_size]
             label = self.test_labels[start:start + self.win_size]
         if self.return_index:
@@ -171,7 +171,7 @@ class SMAPSegLoader(object):
             window = self.test[start:start + self.win_size]
             label = self.test_labels[start:start + self.win_size]
         else:
-            start = index // self.step * self.win_size
+            start = index * self.win_size
             window = self.test[start:start + self.win_size]
             label = self.test_labels[start:start + self.win_size]
         if self.return_index:
@@ -221,7 +221,7 @@ class SMDSegLoader(object):
             window = self.test[start:start + self.win_size]
             label = self.test_labels[start:start + self.win_size]
         else:
-            start = index // self.step * self.win_size
+            start = index * self.win_size
             window = self.test[start:start + self.win_size]
             label = self.test_labels[start:start + self.win_size]
         if self.return_index:
