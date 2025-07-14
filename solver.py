@@ -96,6 +96,7 @@ class Solver(object):
         self.train_end = getattr(self, 'train_end', 1.0)
 
         self.update_count = 0
+        self.cpd_indices: list[int] = []
 
         self.train_loader = get_loader_segment(
             self.data_path,
@@ -359,6 +360,8 @@ class Solver(object):
                     loss1_list.append(loss)
                     if updated:
                         self.update_count += 1
+                        if indices is not None and len(indices) > 0:
+                            self.cpd_indices.append(int(indices[0]))
                         if self.update_count % getattr(self, 'cpd_log_interval', 20) == 0:
                             # evaluate periodically after concept drift update
                             vali_loss1, vali_loss2 = self.vali(self.test_loader)
