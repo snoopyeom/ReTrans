@@ -298,18 +298,36 @@ def build_skab_dataset(
     test_ratio: float = 0.3,
 ):
     root = Path(data_root)
-    groups = ["anomaly-free", "valve1", "valve2", "other"]
-    files = []
-    for g in groups:
-        files += list((root / g).glob("*.csv"))
-    files = sorted(files, key=lambda p: (p.parent.name, p.name))
+
+    # Scan all csv files under the SKAB root directory.
+    files = sorted(root.glob("*/*.csv"), key=lambda p: (p.parent.name, p.name))
+
+    train_files: list[Path] = []
+    test_files: list[Path] = []
+    zero_anomaly_files: list[Path] = []
+    positive_files: list[Path] = []
+
+    for fp in files:
+        df, ts_col, label_col, feats = _skab_read_csv(fp)
+        total_anom = df[label_col].sum()
+        if fp.parent.name == "anomaly-free" and fp.name == "anomaly-free.csv":
+            train_files.append(fp)
+            zero_anomaly_files.append(fp)
+        elif total_anom == 0:
+            train_files.append(fp)
+            zero_anomaly_files.append(fp)
+        else:
+            test_files.append(fp)
+            positive_files.append(fp)
+
+    val_files: list[Path] = []
+
+    # Display which files are used for training and testing.
+    rel = lambda p: str(p.relative_to(root))
+    print("[SKAB] Train files:", [rel(p) for p in train_files])
+    print("[SKAB] Test files:", [rel(p) for p in test_files])
 
     n = len(files)
-    n_train = int(round(n * train_ratio))
-    n_val = int(round(n * val_ratio))
-    train_files = files[:n_train]
-    val_files = files[n_train : n_train + n_val]
-    test_files = files[n_train + n_val :]
 
     def make_windows(file_list):
         X, y = [], []
@@ -359,6 +377,8 @@ def build_skab_dataset(
         "files_train": [str(p) for p in train_files],
         "files_val": [str(p) for p in val_files],
         "files_test": [str(p) for p in test_files],
+        "files_zero_anomaly": [str(p) for p in zero_anomaly_files],
+        "files_positive": [str(p) for p in positive_files],
         "mu": np.asarray(mu).squeeze().tolist() if np.size(mu) else [],
         "sigma": np.asarray(sigma).squeeze().tolist() if np.size(sigma) else [],
     }
