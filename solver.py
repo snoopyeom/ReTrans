@@ -660,6 +660,10 @@ class Solver(object):
         test_energy = np.array(attens_energy)
         test_labels = np.array(test_labels)
 
+        # Align label length with per-time-step energy if necessary
+        if test_labels.size * self.win_size == test_energy.size:
+            test_labels = np.repeat(test_labels, self.win_size)
+
         pred = (test_energy > thresh).astype(int)
 
         gt = test_labels.astype(int)
