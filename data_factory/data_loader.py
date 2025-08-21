@@ -252,6 +252,11 @@ def _skab_autodetect_cols(df: pd.DataFrame):
 
     feats = [c for c in df.columns if c not in {ts_col, label_col}]
     feats = [c for c in feats if np.issubdtype(df[c].dtype, np.number)]
+    # 일부 파일에는 anomaly 이외에도 changepoint 등의 추가 레이블 열이 존재한다.
+    # 이런 열이 특징으로 포함되면 파일 간 특성 차원수가 달라져 스택 시 오류가 발생한다.
+    # 따라서 명시적으로 레이블 관련 열을 제외하여 모든 파일에서 동일한
+    # 특성 차원을 유지하도록 한다.
+    feats = [c for c in feats if c.lower() not in {"anomaly", "changepoint"}]
     return ts_col, label_col, feats
 
 
