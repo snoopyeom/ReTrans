@@ -263,6 +263,8 @@ class Solver(object):
             cri = cri.detach().cpu().numpy()
             attens_energy.append(cri)
         train_energy = np.concatenate(attens_energy, axis=0)
+        # Debug logging for train energy shape
+        print(f"[compute_metrics] train_energy shape: {train_energy.shape}")
 
         # energies on threshold loader
         attens_energy = []
@@ -302,10 +304,19 @@ class Solver(object):
 
         attens_energy = np.concatenate(attens_energy, axis=0)
         test_labels = np.concatenate(test_labels, axis=0)
+        print(
+            f"[compute_metrics] test_energy shape: {attens_energy.shape}, "
+            f"test_labels shape: {test_labels.shape}"
+        )
         combined_energy = np.concatenate([train_energy, attens_energy], axis=0)
         thresh = np.percentile(combined_energy, 100 - self.anomaly_ratio)
+        print(f"[compute_metrics] threshold: {thresh}")
         pred = (attens_energy > thresh).astype(int)
         gt = test_labels.astype(int)
+        print(
+            f"[compute_metrics] pred positives: {np.sum(pred)}, "
+            f"gt positives: {np.sum(gt)}"
+        )
 
         from sklearn.metrics import precision_recall_fscore_support
         # detection adjustment: please see this issue for more information
@@ -578,6 +589,7 @@ class Solver(object):
 
         attens_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
         train_energy = np.array(attens_energy)
+        print(f"[test] train_energy shape: {train_energy.shape}")
 
         # (2) find the threshold
         attens_energy = []
@@ -618,6 +630,7 @@ class Solver(object):
 
         attens_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
         test_energy = np.array(attens_energy)
+        print(f"[test] threshold search energy shape: {test_energy.shape}")
         combined_energy = np.concatenate([train_energy, test_energy], axis=0)
         thresh = np.percentile(combined_energy, 100 - self.anomaly_ratio)
         print("Threshold :", thresh)
@@ -665,10 +678,15 @@ class Solver(object):
         test_labels = np.concatenate(test_labels, axis=0).reshape(-1)
         test_energy = np.array(attens_energy)
         test_labels = np.array(test_labels)
+        print(
+            f"[test] raw evaluation energy shape: {test_energy.shape}, "
+            f"raw labels shape: {test_labels.shape}"
+        )
 
         # Align label length with per-time-step energy if necessary
         if test_labels.size * self.win_size == test_energy.size:
             test_labels = np.repeat(test_labels, self.win_size)
+            print(f"[test] repeated labels shape: {test_labels.shape}")
 
         pred = (test_energy > thresh).astype(int)
 
@@ -676,6 +694,9 @@ class Solver(object):
 
         print("pred:   ", pred.shape)
         print("gt:     ", gt.shape)
+        print(
+            f"[test] pred positives: {np.sum(pred)}, gt positives: {np.sum(gt)}"
+        )
 
         # detection adjustment: please see this issue for more information https://github.com/thuml/Anomaly-Transformer/issues/14
         anomaly_state = False
