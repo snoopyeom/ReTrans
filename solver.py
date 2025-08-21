@@ -84,6 +84,7 @@ class Solver(object):
         'cpd_log_interval': 20,
         'cpd_top_k': 3,
         'cpd_extra_ranges': [(0, 4000)],
+        'stride': 1,
     }
 
     def __init__(self, config):
@@ -98,31 +99,55 @@ class Solver(object):
         self.update_count = 0
         self.cpd_indices: list[int] = []
 
-        self.train_loader = get_loader_segment(
+        self.train_loader, loader_meta = get_loader_segment(
             self.data_path,
             batch_size=self.batch_size,
             win_size=self.win_size,
+            step=self.stride,
             mode='train',
             dataset=self.dataset,
             train_start=self.train_start,
             train_end=self.train_end,
             return_index=True,
+            return_meta=True,
         )
-        self.vali_loader = get_loader_segment(self.data_path, batch_size=self.batch_size, win_size=self.win_size,
-                                              mode='val',
-                                              dataset=self.dataset,
-                                              train_start=self.train_start,
-                                              train_end=self.train_end)
-        self.test_loader = get_loader_segment(self.data_path, batch_size=self.batch_size, win_size=self.win_size,
-                                              mode='test',
-                                              dataset=self.dataset,
-                                              train_start=self.train_start,
-                                              train_end=self.train_end)
-        self.thre_loader = get_loader_segment(self.data_path, batch_size=self.batch_size, win_size=self.win_size,
-                                              mode='thre',
-                                              dataset=self.dataset,
-                                              train_start=self.train_start,
-                                              train_end=self.train_end)
+        if loader_meta:
+            self.input_c = loader_meta.get('input_c', self.input_c)
+            self.output_c = loader_meta.get('output_c', self.output_c)
+
+        self.vali_loader, _ = get_loader_segment(
+            self.data_path,
+            batch_size=self.batch_size,
+            win_size=self.win_size,
+            step=self.stride,
+            mode='val',
+            dataset=self.dataset,
+            train_start=self.train_start,
+            train_end=self.train_end,
+            return_meta=True,
+        )
+        self.test_loader, _ = get_loader_segment(
+            self.data_path,
+            batch_size=self.batch_size,
+            win_size=self.win_size,
+            step=self.stride,
+            mode='test',
+            dataset=self.dataset,
+            train_start=self.train_start,
+            train_end=self.train_end,
+            return_meta=True,
+        )
+        self.thre_loader, _ = get_loader_segment(
+            self.data_path,
+            batch_size=self.batch_size,
+            win_size=self.win_size,
+            step=self.stride,
+            mode='thre',
+            dataset=self.dataset,
+            train_start=self.train_start,
+            train_end=self.train_end,
+            return_meta=True,
+        )
 
         self.build_model()
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
