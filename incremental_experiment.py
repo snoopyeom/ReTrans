@@ -28,6 +28,12 @@ def train_and_test(args: argparse.Namespace) -> None:
     if hasattr(solver, "update_count"):
         print(f"Total CPD updates: {solver.update_count}")
 
+    if getattr(solver, "history", None):
+        last_f1 = solver.history[-1][1]
+        last_auc = solver.history[-1][2]
+        print(
+            f"Continual learning - Final F1: {last_f1:.4f}, AUC: {last_auc:.4f}")
+
     if args.replay_plot:
         try:
             ds = solver.train_loader.dataset
@@ -71,7 +77,6 @@ def train_and_test(args: argparse.Namespace) -> None:
         args.model_save_path, f"{args.model_tag}_checkpoint.pth")
     solver.load_model = args.load_model
     acc, prec, rec, f1, auc = solver.test()
-    print(f"Continual learning - Final F1: {f1:.4f}, AUC: {auc:.4f}")
     print(
         "Batch evaluation - Accuracy: {:.4f}, Precision: {:.4f}, Recall: {:.4f}, "
         "F1: {:.4f}, AUC: {:.4f}".format(acc, prec, rec, f1, auc))
