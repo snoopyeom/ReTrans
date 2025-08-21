@@ -253,10 +253,16 @@ class Solver(object):
                          .repeat(1, 1, 1, self.win_size)),
                         series[u].detach()) * temperature
             metric = torch.softmax((-series_loss - prior_loss), dim=-1)
-            cri = metric * loss
+            # ``metric`` and ``loss`` have shape ``(batch, win_size)`` which
+            # yields an anomaly score per time step.  Labels from
+            # ``_SKABDataset`` however are defined per window, so the energy
+            # must be aggregated accordingly.  Taking the mean ensures the
+            # resulting array has one score per window and matches the label
+            # dimensionality.
+            cri = torch.mean(metric * loss, dim=-1)
             cri = cri.detach().cpu().numpy()
             attens_energy.append(cri)
-        train_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
+        train_energy = np.concatenate(attens_energy, axis=0)
 
         # energies on threshold loader
         attens_energy = []
@@ -289,13 +295,13 @@ class Solver(object):
                          .repeat(1, 1, 1, self.win_size)),
                         series[u].detach()) * temperature
             metric = torch.softmax((-series_loss - prior_loss), dim=-1)
-            cri = metric * loss
+            cri = torch.mean(metric * loss, dim=-1)
             cri = cri.detach().cpu().numpy()
             attens_energy.append(cri)
             test_labels.append(labels)
 
-        attens_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
-        test_labels = np.concatenate(test_labels, axis=0).reshape(-1)
+        attens_energy = np.concatenate(attens_energy, axis=0)
+        test_labels = np.concatenate(test_labels, axis=0)
         combined_energy = np.concatenate([train_energy, attens_energy], axis=0)
         thresh = np.percentile(combined_energy, 100 - self.anomaly_ratio)
         pred = (attens_energy > thresh).astype(int)
