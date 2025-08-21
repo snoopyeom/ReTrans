@@ -313,6 +313,11 @@ class Solver(object):
         print(f"[compute_metrics] threshold: {thresh}")
         pred = (attens_energy > thresh).astype(int)
         gt = test_labels.astype(int)
+        # ``test_labels`` can have shape ``(n, win_size)`` with per-time-step
+        # annotations.  Reduce to a single label per window so that it matches
+        # the 1-D ``pred`` array generated above.
+        if gt.ndim > 1:
+            gt = (gt.max(axis=1) > 0).astype(int)
         print(
             f"[compute_metrics] pred positives: {np.sum(pred)}, "
             f"gt positives: {np.sum(gt)}"
