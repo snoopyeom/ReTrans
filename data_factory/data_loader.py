@@ -310,8 +310,16 @@ def build_skab_dataset(
         return X, y
 
     X_tr, y_tr = make_windows(train_files)
-    mu = X_tr.mean(axis=(0, 1), keepdims=True) if X_tr.size else 0
-    sigma = X_tr.std(axis=(0, 1), keepdims=True) + 1e-8 if X_tr.size else 1
+    mu = (
+        X_tr.mean(axis=(0, 1), keepdims=True)
+        if X_tr.size
+        else np.array(0.0, dtype=np.float32)
+    )
+    sigma = (
+        X_tr.std(axis=(0, 1), keepdims=True) + 1e-8
+        if X_tr.size
+        else np.array(1.0, dtype=np.float32)
+    )
     X_tr = (X_tr - mu) / sigma if X_tr.size else X_tr
     X_va, y_va = make_windows(val_files)
     if X_va.size:
@@ -332,8 +340,8 @@ def build_skab_dataset(
         "files_train": [str(p) for p in train_files],
         "files_val": [str(p) for p in val_files],
         "files_test": [str(p) for p in test_files],
-        "mu": mu.squeeze().tolist() if np.size(mu) else [],
-        "sigma": sigma.squeeze().tolist() if np.size(sigma) else [],
+        "mu": np.asarray(mu).squeeze().tolist() if np.size(mu) else [],
+        "sigma": np.asarray(sigma).squeeze().tolist() if np.size(sigma) else [],
     }
     return (X_tr, y_tr), (X_va, y_va), (X_te, y_te), meta
 
