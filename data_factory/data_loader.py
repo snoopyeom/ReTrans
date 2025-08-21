@@ -245,6 +245,8 @@ def _skab_autodetect_cols(df: pd.DataFrame):
 
     label_col = None
     for c in df.columns:
+        if c == ts_col:
+            continue
         uniq = pd.unique(df[c])
         uniq_num = pd.to_numeric(pd.Series(uniq), errors="coerce").dropna().unique()
         if set(uniq_num).issubset({0, 1}):
