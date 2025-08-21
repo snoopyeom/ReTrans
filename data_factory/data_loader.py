@@ -256,7 +256,21 @@ def _skab_autodetect_cols(df: pd.DataFrame):
 
 
 def _skab_read_csv(path: Path):
-    df = pd.read_csv(path)
+    """Read a SKAB csv file handling different delimiters.
+
+    The official SKAB dataset distributes csv files where columns are
+    separated by semicolons (``;``).  `pandas.read_csv` defaults to comma
+    separated values which results in the entire file being read as a single
+    column and the timestamp column going undetected.  By asking pandas to
+    automatically sniff the delimiter we support both semicolon and comma
+    separated files.
+    """
+
+    # ``sep=None`` together with ``engine='python'`` lets pandas detect the
+    # delimiter using the built‑in ``csv.Sniffer``.  This covers the SKAB
+    # dataset which uses semicolons without breaking potential comma separated
+    # variants.
+    df = pd.read_csv(path, sep=None, engine="python")
     ts_col, label_col, feats = _skab_autodetect_cols(df)
     if ts_col is None:
         raise ValueError(f"[SKAB] timestamp column not found in {path}")
